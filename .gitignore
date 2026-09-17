@@ -1,0 +1,23 @@
+# Local configuration
+config/local.toml
+
+# Environment
+.env
+
+# Logs
+logs/
+
+# Build
+bin/
+dist/
+
+# Test
+coverage.out
+coverage.html
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
