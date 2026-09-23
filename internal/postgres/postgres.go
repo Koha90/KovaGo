@@ -1,4 +1,4 @@
-// Package postgres provides PostrgreSQL infrastructure.
+// Package postgres provides PostgreSQL infrastructure.
 package postgres
 
 import (
@@ -11,14 +11,14 @@ import (
 	"github.com/Koha90/KovaGo/internal/config"
 )
 
-// Open creates and verifies a PostrgreSQL connection pool.
+// Open creates and verifies a PostgreSQL connection pool.
 func Open(
 	ctx context.Context,
 	cfg config.Database,
 ) (*sql.DB, error) {
 	db, err := sql.Open("pgx", cfg.URL)
 	if err != nil {
-		return nil, fmt.Errorf("open PostrgreSQL: %w", err)
+		return nil, fmt.Errorf("open PostgreSQL: %w", err)
 	}
 
 	db.SetMaxOpenConns(cfg.MaxOpenConnections)
@@ -37,7 +37,7 @@ func Open(
 
 		return nil, fmt.Errorf(
 
-			"ping PostrgreSQL: %w",
+			"ping PostgreSQL: %w",
 			err,
 		)
 	}

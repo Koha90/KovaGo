@@ -3,8 +3,14 @@ CMD := ./cmd/kovago
 BIN := ./bin/${APP}
 
 GO := go
+COMPOSE := docker compose
 
 CONFIG ?= config/local.toml
+
+MIGRATIONS := ./internal/migrator/migrations
+GOOSE := $(GO) tool goose
+
+DB_SERVICE := postgres
 
 .DEFAULT_GOAL := help
 
@@ -67,7 +73,7 @@ download: ## Dowload Go modules
 	@$(GO) mod download
 
 .PHONY: check
-check: fmt vet test ## Run local quality checks
+check: fmt vet test migrations-validate ## Run local quality checks
 	@echo "✓ all checks passed"
 
 .PHONY: ci
@@ -83,3 +89,52 @@ clean: ## Remove generated files
 .PHONY: logs
 logs: ## Follow KovaGo log file
 	@tail -f logs/kovago.log
+
+.PHONY: db-up
+db-up: ## Start PostgreSQL
+	@echo "→ starting PostgreSQL"
+	@$(COMPOSE) up -d $(DB_SERVICE)
+	@echo "→ waiting for PostgreSQL"
+	@until $(COMPOSE) exec -T $(DB_SERVICE) pg_isready -U kovago -d kovago >/dev/null 2>&1; do sleep 1; done
+	@echo "✓ PostgreSQL is ready"
+
+.PHONY: db-down
+db-down: ## Stop PostgreSQL
+	@echo "→ stopping PostgreSQL"
+	@$(COMPOSE) down
+
+.PHONY: db-status
+db-status: ## Show PostgreSQL status
+	@$(COMPOSE) ps $(DB_SERVICE)
+
+.PHONY: db-logs
+db-logs: ## Follow PostgreSQL logs
+	@$(COMPOSE) logs -f $(DB_SERVICE)
+
+.PHONY: db-shell
+db-shell: ## Open PostgreSQL shell
+	@$(COMPOSE) exec $(DB_SERVICE) psql -U kovago -d kovago
+
+.PHONY: db-reset
+db-reset: ## Recreate local PostgreSQL database
+	@echo "→ removing PostgreSQL data"
+	@$(COMPOSE) down -v
+	@$(MAKE) db-up
+	@echo "✓ PostgreSQL database recreated"
+
+.PHONY: migration
+migration: ## Create a new SQL migration: make migration name=create_shops
+	@test -n "$(name)" || (echo "usage: make migration name=create_shops"; exit 1)
+	@echo "→ creating migration: $(name)"
+	@$(GOOSE) -s -dir $(MIGRATIONS) create "$(name)" sql
+
+.PHONY: migrations-validate
+migrations-validate: ## Validate database migrations
+	@echo "→ validating migrations"
+	@$(GOOSE) -dir $(MIGRATIONS) validate
+	@echo "✓ migrations valid"
+
+.PHONY: dev
+dev: ## Start development environment
+	@$(MAKE) db-up
+	@$(MAKE) run

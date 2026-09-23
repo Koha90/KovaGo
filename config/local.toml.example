@@ -13,7 +13,7 @@ path = "logs/kovago.log"
 format = "json"
 
 [database]
-url = "postgres://kovago:kovago@localhost:5432/kovago?sslmode=disable"
+url = "postgres://kovago:kovago@localhost:5433/kovago?sslmode=disable"
 
 max_open_connections = 20
 max_idle_connections = 10
